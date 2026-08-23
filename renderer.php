@@ -39,9 +39,13 @@ class mod_quizgame_renderer extends plugin_renderer_base {
      */
     public function render_game($quizgame, $context) {
 
-        $categoryid = explode(',', $quizgame->questioncategory)[0];
-        $questionids = question_bank::get_finder()->get_questions_from_categories(intval($categoryid), '');
-        $questions = question_load_questions($questionids);
+        if (empty($quizgame->questioncategory)) {
+            $questions = [];
+        } else {
+            $categoryid = explode(',', $quizgame->questioncategory)[0];
+            $questionids = question_bank::get_finder()->get_questions_from_categories(intval($categoryid), '');
+            $questions = question_load_questions($questionids);
+        }
 
         $this->page->requires->strings_for_js(
             [
