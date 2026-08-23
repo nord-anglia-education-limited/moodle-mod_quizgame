@@ -34,7 +34,7 @@ if ($id) {
     $course     = $DB->get_record('course', ['id' => $quizgame->course], '*', MUST_EXIST);
     $cm         = get_coursemodule_from_instance('quizgame', $quizgame->id, $course->id, false, MUST_EXIST);
 } else {
-    error('You must specify a course_module ID or an instance ID');
+    throw new moodle_exception('invalidcmorid', 'quizgame');
 }
 
 require_login($course, true, $cm);
