@@ -1338,11 +1338,9 @@ define(['jquery', 'core/yui', 'core/notification', 'core/ajax'], function($, Y, 
 
     /**
      * Initialization of the game.
-     * @param {array} q
-     * @param {array} qid
+     * @param {number} qid
      */
-    function doInitialize(q, qid) {
-        questions = q;
+    function doInitialize(qid) {
         quizgame = qid;
         if (document.addEventListener) {
             document.addEventListener('fullscreenchange', fschange, false);
@@ -1351,6 +1349,7 @@ define(['jquery', 'core/yui', 'core/notification', 'core/ajax'], function($, Y, 
             document.addEventListener('webkitfullscreenchange', fschange, false);
         }
         stage = document.getElementById("mod_quizgame_game");
+        questions = JSON.parse(stage.dataset.questions);
         context = stage.getContext("2d");
         smallscreen();
         interval = setInterval(function() {

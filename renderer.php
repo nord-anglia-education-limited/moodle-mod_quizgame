@@ -90,13 +90,15 @@ class mod_quizgame_renderer extends plugin_renderer_base {
             }
         }
 
-        $this->page->requires->js_call_amd('mod_quizgame/quizgame', 'init', [$qjson, $quizgame->id]);
+        // The question data can easily exceed the size limit for arguments passed via js_call_amd(), so it is
+        // embedded as a data attribute instead and read from the DOM by the JavaScript module.
+        $this->page->requires->js_call_amd('mod_quizgame/quizgame', 'init', [$quizgame->id]);
 
         $display = '<div>';
         $display .= get_string('howtoplay', 'mod_quizgame') . $this->output->help_icon('howtoplay', 'mod_quizgame', '');
         $display .= '</div>';
 
-        $display .= '<canvas id="mod_quizgame_game"></canvas>';
+        $display .= '<canvas id="mod_quizgame_game" data-questions="' . s(json_encode($qjson)) . '"></canvas>';
         $display .= '<audio id="mod_quizgame_sound_laser" preload="auto">' .
             '<source src="sound/Laser.wav" type="audio/wav" />' .
             '</audio>';
