@@ -76,7 +76,11 @@ function quizgame_add_instance(stdClass $quizgame, ?mod_quizgame_mod_form $mform
     // Note: highscores functionality has not yet been implemented.
     // See https://github.com/xow/moodle-mod_quizgame/issues/14.
 
-    return $DB->insert_record('quizgame', $quizgame);
+    $quizgame->id = $DB->insert_record('quizgame', $quizgame);
+
+    quizgame_grade_item_update($quizgame);
+
+    return $quizgame->id;
 }
 
 /**
@@ -96,7 +100,11 @@ function quizgame_update_instance(stdClass $quizgame, ?mod_quizgame_mod_form $mf
     $quizgame->timemodified = time();
     $quizgame->id = $quizgame->instance;
 
-    return $DB->update_record('quizgame', $quizgame);
+    $result = $DB->update_record('quizgame', $quizgame);
+
+    quizgame_grade_item_update($quizgame);
+
+    return $result;
 }
 
 /**
@@ -115,6 +123,8 @@ function quizgame_delete_instance($id) {
     if (! $quizgame = $DB->get_record('quizgame', ['id' => $id])) {
         return false;
     }
+
+    quizgame_grade_item_delete($quizgame);
 
     $DB->delete_records('quizgame', ['id' => $quizgame->id]);
     $DB->delete_records('quizgame_scores', ['quizgameid' => $quizgame->id]);
@@ -353,8 +363,13 @@ function quizgame_scale_used_anywhere($scaleid) {
  * @return void
  */
 function quizgame_grade_item_update(stdClass $quizgame, $grades = null) {
-    global $CFG;
+    global $CFG, $DB;
     require_once($CFG->libdir . '/gradelib.php');
+
+    if (!isset($quizgame->grade)) {
+        // The mod_form does not expose a grade field, so it is not always submitted with the instance data.
+        $quizgame->grade = $DB->get_field('quizgame', 'grade', ['id' => $quizgame->id]);
+    }
 
     $item = [];
     $item['itemname'] = clean_param($quizgame->name, PARAM_NOTAGS);
@@ -362,7 +377,25 @@ function quizgame_grade_item_update(stdClass $quizgame, $grades = null) {
     $item['grademax']  = $quizgame->grade;
     $item['grademin']  = 0;
 
-    grade_update('mod/quizgame', $quizgame->course, 'mod', 'quizgame', $quizgame->id, 0, null, $item);
+    if ($grades === 'reset') {
+        $item['reset'] = true;
+        $grades = null;
+    }
+
+    grade_update('mod/quizgame', $quizgame->course, 'mod', 'quizgame', $quizgame->id, 0, $grades, $item);
+}
+
+/**
+ * Deletes the grade item for the given quizgame instance
+ *
+ * @param stdClass $quizgame instance object
+ * @return int grade_update() return status
+ */
+function quizgame_grade_item_delete($quizgame) {
+    global $CFG;
+    require_once($CFG->libdir . '/gradelib.php');
+
+    return grade_update('mod/quizgame', $quizgame->course, 'mod', 'quizgame', $quizgame->id, 0, null, ['deleted' => 1]);
 }
 
 /**
