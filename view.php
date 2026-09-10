@@ -75,6 +75,11 @@ $renderer = $PAGE->get_renderer('mod_quizgame');
 // Output starts here.
 echo $OUTPUT->header();
 
+// Display the description.
+if (trim($quizgame->intro)) {
+    echo $OUTPUT->box(format_text($quizgame->intro, $quizgame->introformat, ['context' => $context]), 'generalbox', 'intro');
+}
+
 // Game here.
 echo "<link href='$CFG->wwwroot/mod/quizgame/font.php' rel='stylesheet' type='text/css'>";
 echo $renderer->render_game($quizgame, $context);
