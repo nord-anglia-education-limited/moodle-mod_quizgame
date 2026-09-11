@@ -57,6 +57,7 @@ define(['jquery', 'core/yui', 'core/notification', 'core/ajax'], function($, Y, 
     var currentTeam = [];
     var lastShot = 0;
     var currentPointsLeft = 0;
+    var currentAnswers = [];
     var context;
     var inFullscreen = false;
 
@@ -341,6 +342,15 @@ define(['jquery', 'core/yui', 'core/notification', 'core/ajax'], function($, Y, 
     }
 
     /**
+     * Helper function to convert an answer's position into a display letter (A, B, C, ...).
+     * @param {int} index
+     * @returns {string}
+     */
+    function answerLetter(index) {
+        return String.fromCharCode(65 + index);
+    }
+
+    /**
      * Helper function process current level.
      * @param {array} questions
      * @param {object} level
@@ -351,19 +361,24 @@ define(['jquery', 'core/yui', 'core/notification', 'core/ajax'], function($, Y, 
         currentTeam = [];
         lastShot = 0;
         currentPointsLeft = 0;
+        currentAnswers = [];
 
         if (questions[level].type == 'truefalse') {
-            questions[level].answers.forEach(function(answer) {
+            questions[level].answers.forEach(function(answer, index) {
+                var letter = answerLetter(index);
+                currentAnswers.push({letter: letter, text: answer.text});
                 var enemy = new TFEnemy(Math.random() * bounds.width, -Math.random() * bounds.height / 2,
-                                           answer.text, answer.fraction);
+                                           answer.text, answer.fraction, letter);
                 currentTeam.push(enemy);
                 gameObjects.push(enemy);
             });
             currentPointsLeft = 0; // This is unused by TrueFalse questions.
         } else if (questions[level].type == 'multichoice') {
-            questions[level].answers.forEach(function(answer) {
+            questions[level].answers.forEach(function(answer, index) {
+                var letter = answerLetter(index);
+                currentAnswers.push({letter: letter, text: answer.text});
                 var enemy = new MultiEnemy(Math.random() * bounds.width, -Math.random() * bounds.height / 2,
-                                           answer.text, answer.fraction, questions[level].single);
+                                           answer.text, answer.fraction, questions[level].single, letter);
                 if (answer.fraction < 1) {
                     currentTeam.push(enemy);
                     if (answer.fraction > 0) {
@@ -421,7 +436,15 @@ define(['jquery', 'core/yui', 'core/notification', 'core/ajax'], function($, Y, 
                                                5, displayRect.height - 20);
             context.textAlign = 'center';
 
-            wrapText(context, question, false, 20, displayRect.width * 0.9, displayRect.width / 2, 20);
+            var answersY = wrapText(context, question, false, 20, displayRect.width * 0.9, displayRect.width / 2, 20);
+
+            if (currentAnswers.length > 0) {
+                context.font = "15px Audiowide";
+                var answerLine = currentAnswers.map(function(answer) {
+                    return answer.letter + ': ' + answer.text;
+                }).join('     ');
+                wrapText(context, answerLine, false, 18, displayRect.width * 0.9, displayRect.width / 2, answersY + 10);
+            }
         } else {
             context.fillStyle = '#FFFFFF';
             context.font = "18px Audiowide";
@@ -641,8 +664,9 @@ define(['jquery', 'core/yui', 'core/notification', 'core/ajax'], function($, Y, 
      * @param {int} y
      * @param {string} text
      * @param {float} fraction
+     * @param {string} letter
      */
-    function Enemy(src, x, y, text, fraction) {
+    function Enemy(src, x, y, text, fraction, letter) {
         GameObject.call(this, src, x, y);
         this.xspeed = enemySpeed;
         this.yspeed = enemySpeed * (2 + Math.random()) / 4;
@@ -650,6 +674,7 @@ define(['jquery', 'core/yui', 'core/notification', 'core/ajax'], function($, Y, 
         this.movespeed.y = 0;
         this.direction.y = 1;
         this.text = text;
+        this.letter = letter || null;
         this.fraction = fraction;
         this.movementClock = 0;
         this.shotFrequency = 80;
@@ -711,10 +736,15 @@ define(['jquery', 'core/yui', 'core/notification', 'core/ajax'], function($, Y, 
         GameObject.prototype.draw.call(this, context);
 
         context.fillStyle = '#FFFFFF';
-        context.font = "15px Audiowide";
         context.textAlign = 'center';
 
-        wrapText(context, this.text, true, 17, displayRect.width * 0.2, this.x + this.image.width / 2, this.y - 5);
+        if (this.letter) {
+            context.font = "20px Audiowide";
+            context.fillText(this.letter, this.x + this.image.width / 2, this.y - 5);
+        } else {
+            context.font = "15px Audiowide";
+            wrapText(context, this.text, true, 17, displayRect.width * 0.2, this.x + this.image.width / 2, this.y - 5);
+        }
     };
 
     Enemy.prototype.die = function() {
@@ -754,9 +784,10 @@ define(['jquery', 'core/yui', 'core/notification', 'core/ajax'], function($, Y, 
      * @param {int} y
      * @param {string} text
      * @param {float} fraction
+     * @param {string} letter
      */
-    function TFEnemy(x, y, text, fraction) {
-        Enemy.call(this, "pix/enemy.png", x, y, text, fraction);
+    function TFEnemy(x, y, text, fraction, letter) {
+        Enemy.call(this, "pix/enemy.png", x, y, text, fraction, letter);
     }
 
     TFEnemy.prototype = Object.create(Enemy.prototype);
@@ -790,9 +821,10 @@ define(['jquery', 'core/yui', 'core/notification', 'core/ajax'], function($, Y, 
      * @param {string} text
      * @param {float} fraction
      * @param {boolean} single
+     * @param {string} letter
      */
-    function MultiEnemy(x, y, text, fraction, single) {
-        Enemy.call(this, "pix/enemy.png", x, y, text, fraction);
+    function MultiEnemy(x, y, text, fraction, single, letter) {
+        Enemy.call(this, "pix/enemy.png", x, y, text, fraction, letter);
         this.single = single;
     }
 
@@ -1084,6 +1116,7 @@ define(['jquery', 'core/yui', 'core/notification', 'core/ajax'], function($, Y, 
      * @param {int} maxLineWidth
      * @param {int} x
      * @param {int} y
+     * @returns {int} The y position of the last line drawn.
      */
     function wrapText(context, input, wrapUpwards, textHeight, maxLineWidth, x, y) {
         var drawLines = [];
@@ -1127,6 +1160,8 @@ define(['jquery', 'core/yui', 'core/notification', 'core/ajax'], function($, Y, 
 
             context.fillText(drawLine.text, x, drawLine.y + modifier);
         });
+
+        return y;
     }
 
     /**
