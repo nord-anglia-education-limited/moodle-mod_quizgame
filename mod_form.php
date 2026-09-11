@@ -65,8 +65,10 @@ class mod_quizgame_mod_form extends moodleform_mod {
             $this->add_intro_editor();
         }
 
-        $context = context_course::instance($COURSE->id);
-        $categories = qbank_managecategories\helper::question_category_options([$context], false, 0);
+        // Question categories now live in the context of a "question bank" activity module rather than
+        // directly in the course context, so use (or create) the course's default shared question bank.
+        $qbankcm = core_question\local\bank\question_bank_helper::get_default_open_instance_system_type($COURSE, true);
+        $categories = qbank_managecategories\helper::question_category_options([$qbankcm->context], false, 0);
 
         $mform->addElement('selectgroups', 'questioncategory', get_string('questioncategory', 'quizgame'), $categories);
         $mform->addHelpButton('questioncategory', 'questioncategory', 'quizgame');
