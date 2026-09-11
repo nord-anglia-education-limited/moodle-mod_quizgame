@@ -14,10 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-// Let codechecker ignore the sniff for this file for nullable types since the super method of
-// create_instance is not yet rewritten and mod_quizgame_generator::create_instance must have an identical signature.
-// phpcs:disable PHPCompatibility.FunctionDeclarations.RemovedImplicitlyNullableParam.Deprecated
-
 /**
  * mod_quizgame data generator class.
  *
@@ -32,7 +28,7 @@ class mod_quizgame_generator extends testing_module_generator {
      * @param array|stdClass $record quizgame settings
      * @param null|array $options quizgame options
      */
-    public function create_instance($record = null, array $options = null) {
+    public function create_instance($record = null, ?array $options = null) {
 
         // Add default values for quizgame.
         $record = (array)$record + [
