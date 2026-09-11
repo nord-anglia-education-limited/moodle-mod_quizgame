@@ -27,10 +27,10 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2024100704; // The current module version (Date: YYYYMMDDXX).
-$plugin->requires  = 2024100700; // Requires Moodle version 4.5 or later.
+$plugin->version   = 2026091100; // The current module version (Date: YYYYMMDDXX).
+$plugin->requires  = 2026091100; // Requires Moodle version 5.3 or later.
 $plugin->cron      = 0; // Period for cron to check this module in seconds.
 $plugin->component = 'mod_quizgame';
 
 $plugin->maturity  = MATURITY_STABLE;
-$plugin->release   = 'v4.5.0';
+$plugin->release   = 'v5.3dev';
