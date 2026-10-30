@@ -53,6 +53,8 @@ define(['jquery', 'core/yui', 'core/notification', 'core/ajax'], function($, Y, 
     var interval;
     var enemySpeed;
     var touchDown = false;
+    // Touch listeners on the document are passive by default, which stops preventDefault (and so scrolling) from working.
+    var touchOptions = {passive: false};
     var mouseDown = false;
     var currentTeam = [];
     var lastShot = 0;
@@ -193,9 +195,10 @@ define(['jquery', 'core/yui', 'core/notification', 'core/ajax'], function($, Y, 
         document.onmousedown = null;
         document.onmouseup = null;
         document.onmousemove = null;
-        document.ontouchstart = null;
-        document.ontouchend = null;
-        document.ontouchmove = null;
+        document.removeEventListener('touchstart', touchstart, touchOptions);
+        document.removeEventListener('touchend', touchend, touchOptions);
+        document.removeEventListener('touchend', menutouchend, touchOptions);
+        document.removeEventListener('touchmove', touchmove, touchOptions);
         window.onresize = null;
     }
 
@@ -206,7 +209,7 @@ define(['jquery', 'core/yui', 'core/notification', 'core/ajax'], function($, Y, 
         clearEvents();
         document.onkeydown = menukeydown;
         document.onmouseup = menumousedown;
-        document.ontouchend = menutouchend;
+        document.addEventListener('touchend', menutouchend, touchOptions);
         window.onresize = orientationChange;
     }
 
@@ -314,14 +317,15 @@ define(['jquery', 'core/yui', 'core/notification', 'core/ajax'], function($, Y, 
 
         nextLevel();
 
+        clearEvents();
         document.onkeyup = keyup;
         document.onkeydown = keydown;
         document.onmouseup = mouseup;
         document.onmousedown = mousedown;
         document.onmousemove = mousemove;
-        document.ontouchstart = touchstart;
-        document.ontouchend = touchend;
-        document.ontouchmove = touchmove;
+        document.addEventListener('touchstart', touchstart, touchOptions);
+        document.addEventListener('touchend', touchend, touchOptions);
+        document.addEventListener('touchmove', touchmove, touchOptions);
         window.onresize = orientationChange;
 
         document.addEventListener("gesturestart", cancelled, false);
@@ -1211,6 +1215,8 @@ define(['jquery', 'core/yui', 'core/notification', 'core/ajax'], function($, Y, 
      */
     function menutouchend(e) {
         if (e.target === stage) {
+            // Stop the emulated mouse event from starting the game twice.
+            e.preventDefault();
             loadGame();
         }
     }
@@ -1302,9 +1308,13 @@ define(['jquery', 'core/yui', 'core/notification', 'core/ajax'], function($, Y, 
      */
     function touchstart(e) {
         if (e.target === stage) {
-            if (player.alive && e.touches.length > 1) {
+            var touch = e.changedTouches[0];
+            var rect = stage.getBoundingClientRect();
+            var touchedPlayer = player.getRect().Contains({x: touch.clientX - rect.left, y: touch.clientY - rect.top});
+            if (player.alive && (e.touches.length > 1 || touchedPlayer)) {
                 player.Shoot();
-            } else {
+            }
+            if (e.touches.length === 1) {
                 touchDown = true;
                 touchmove(e);
             }
@@ -1336,7 +1346,7 @@ define(['jquery', 'core/yui', 'core/notification', 'core/ajax'], function($, Y, 
     function touchmove(e) {
         var rect = e.target.getBoundingClientRect();
         // Required for getting the stage's relative touch position, due to a previous significant offset.
-        var x = e.touches[0].pageX - rect.left;
+        var x = e.touches[0].clientX - rect.left;
         var y = e.touches[0].clientY - rect.top;
 
         window.stage = stage;
